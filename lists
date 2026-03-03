@@ -1,0 +1,31 @@
+if __name__ == '__main__':
+    N = int(input())
+    arr = []
+    while (N != 0):
+        command = input().split()# ("command", "position(OPT)", "value(OPT)")
+        
+        instr = command[0] #0 -> command, 1 -> position, 2 -> value
+        
+        if instr == "insert": #Only command that takes 2 inputs
+            pos, val = int(command[1]), int(command[2])
+            arr.insert(pos, val)
+        
+        elif instr == "append" :
+            val = int(command[1])
+            arr.append(val)
+        
+        elif instr == "remove":
+            val = int(command[1])
+            arr.remove(val) #when using arr.remove() and there is duplicates it is only the first instance that is removed
+        
+        elif instr == "sort":
+            arr.sort()
+        elif instr ==  "pop":
+            arr.pop()
+        elif instr == "reverse":
+            arr.reverse()
+        
+        else:
+            print(arr)
+        
+        N-= 1
