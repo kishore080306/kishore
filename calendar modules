@@ -1,0 +1,10 @@
+import calendar
+
+# Read input: month, day, and year
+m, d, y = map(int, input().split())
+
+# calendar.weekday(year, month, day) returns 0-6
+day_index = calendar.weekday(y, m, d)
+
+# Use calendar.day_name to get the string, and .upper() for the format
+print(calendar.day_name[day_index].upper())
