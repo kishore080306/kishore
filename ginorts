@@ -1,0 +1,16 @@
+S = input()
+
+def sort_key(c):
+    if c.islower():
+        return (0, c)      # Priority 0: Lowercase
+    elif c.isupper():
+        return (1, c)      # Priority 1: Uppercase
+    elif c.isdigit():
+        num = int(c)
+        if num % 2 != 0:
+            return (2, c)  # Priority 2: Odd Digits
+        else:
+            return (3, c)  # Priority 3: Even Digits
+
+# Sort using the custom key and join back into a string
+print("".join(sorted(S, key=sort_key)))
