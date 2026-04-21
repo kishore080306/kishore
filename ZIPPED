@@ -1,0 +1,17 @@
+# Enter your code here. Read input from STDIN. Print output to STDOUT
+# Read N (students) and K (subjects)
+n, k = map(int, input().split())
+
+# Create a list to store the marks of each subject
+marks_data = []
+
+# Read K lines, each representing scores for all N students in that subject
+for _ in range(k):
+    marks_data.append(map(float, input().split()))
+
+# Use zip(*marks_data) to group scores by student
+# This turns [Subj1, Subj2, Subj3] into [(S1_scores), (S2_scores), ...]
+for scores in zip(*marks_data):
+    # Calculate average: sum of scores divided by number of subjects (k)
+    avg = sum(scores) / k
+    print(round(avg, 1))
