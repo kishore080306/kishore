@@ -1,0 +1,19 @@
+if __name__ == "__main__":
+    # Read N (rows) and M (columns)
+    n, m = map(int, input().split())
+
+    # Read the spreadsheet rows into a list
+    rows = []
+    for _ in range(n):
+        rows.append(list(map(int, input().split())))
+
+    # Read the attribute index K to sort by
+    k = int(input())
+
+    # Sort the rows using the K-th element of each list as the key
+    # Python's sort is stable, so original order is kept for ties
+    rows.sort(key=lambda x: x[k])
+
+    # Print the resulting table
+    for row in rows:
+        print(*row)
