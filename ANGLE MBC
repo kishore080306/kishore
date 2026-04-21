@@ -1,0 +1,18 @@
+# Enter your code here. Read input from STDIN. Print output to STDOUT
+import math
+
+# Step 1: Read the side lengths from input
+# Input lengths AB and BC are natural numbers
+ab = int(input())
+bc = int(input())
+
+# Step 2: Calculate the angle in radians using atan2 or atan
+# atan2(y, x) is often preferred as it handles coordinates directly
+angle_rad = math.atan2(ab, bc)
+
+# Step 3: Convert the angle from radians to degrees
+angle_deg = math.degrees(angle_rad)
+
+# Step 4: Round to the nearest integer and output with the degree symbol
+# Using round() handles the 0.5 rounding requirement (e.g., 56.5 -> 57)
+print(f"{round(angle_deg)}{chr(176)}")
