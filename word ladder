@@ -1,0 +1,152 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+// Check if two words differ by exactly one letter
+bool isAdjacent(const char* w1, const char* w2, int len) {
+    int diff = 0;
+    for (int i = 0; i < len; i++) {
+        if (w1[i] != w2[i]) {
+            diff++;
+            if (diff > 1) return false;
+        }
+    }
+    return diff == 1;
+}
+
+// Backtracking helper to build paths from the DAG parent mappings
+void getPaths(int currIdx, int endIdx, char** words, int** parents, int* parentSizes, 
+              char** currentPath, int pathLen, char*** result, int* returnSize, int* colSizes) {
+    
+    currentPath[pathLen] = words[currIdx];
+    
+    if (currIdx == endIdx) {
+        // Found a complete valid shortest sequence path
+        result[*returnSize] = (char**)malloc((pathLen + 1) * sizeof(char*));
+        for (int i = 0; i <= pathLen; i++) {
+            result[*returnSize][i] = strdup(currentPath[pathLen - i]);
+        }
+        colSizes[*returnSize] = pathLen + 1;
+        (*returnSize)++;
+        return;
+    }
+    
+    for (int i = 0; i < parentSizes[currIdx]; i++) {
+        getPaths(parents[currIdx][i], endIdx, words, parents, parentSizes, 
+                 currentPath, pathLen + 1, result, returnSize, colSizes);
+    }
+}
+
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ * The elements of the return array must be malloced, assume caller calls free().
+ * colSizes must be malloced, assume caller calls free().
+ */
+char*** findLadders(char* beginWord, char* endWord, char** wordList, int wordListSize, int* returnSize, int** returnColumnSizes) {
+    *returnSize = 0;
+    
+    // Find if endWord is in the list
+    int endIdx = -1;
+    for (int i = 0; i < wordListSize; i++) {
+        if (strcmp(wordList[i], endWord) == 0) {
+            endIdx = i;
+            break;
+        }
+    }
+    if (endIdx == -1) {
+        *returnColumnSizes = NULL;
+        return NULL; 
+    }
+
+    int wordLen = strlen(beginWord);
+    int totalWords = wordListSize + 1; // Include beginWord at the end
+    
+    char** words = (char**)malloc(totalWords * sizeof(char*));
+    for (int i = 0; i < wordListSize; i++) words[i] = wordList[i];
+    words[wordListSize] = beginWord;
+    int beginIdx = wordListSize;
+
+    // Track layers
+    int* dist = (int*)malloc(totalWords * sizeof(int));
+    for (int i = 0; i < totalWords; i++) dist[i] = -1;
+    dist[beginIdx] = 0;
+
+    int** parents = (int**)malloc(totalWords * sizeof(int*));
+    int* parentSizes = (int*)calloc(totalWords, sizeof(int));
+    int* parentCaps = (int*)calloc(totalWords, sizeof(int));
+    for (int i = 0; i < totalWords; i++) {
+        parentCaps[i] = 4;
+        parents[i] = (int*)malloc(parentCaps[i] * sizeof(int));
+    }
+
+    // BFS Queue
+    int* queue = (int*)malloc(totalWords * sizeof(int));
+    int head = 0, tail = 0;
+    queue[tail++] = beginIdx;
+    
+    bool foundDest = false;
+
+    while (head < tail && !foundDest) {
+        int currentLevelSize = tail - head;
+        
+        for (int i = 0; i < currentLevelSize; i++) {
+            int u = queue[head++];
+            
+            if (u == endIdx) {
+                foundDest = true;
+            }
+
+            for (int v = 0; v < wordListSize; v++) {
+                if (isAdjacent(words[u], words[v], wordLen)) {
+                    if (dist[v] == -1) {
+                        dist[v] = dist[u] + 1;
+                        queue[tail++] = v;
+                        parents[v][parentSizes[v]++] = u;
+                    } 
+                    else if (dist[v] == dist[u] + 1) {
+                        if (parentSizes[v] == parentCaps[v]) {
+                            parentCaps[v] *= 2;
+                            parents[v] = (int*)realloc(parents[v], parentCaps[v] * sizeof(int));
+                        }
+                        parents[v][parentSizes[v]++] = u;
+                    }
+                }
+            }
+        }
+    }
+
+    if (!foundDest) {
+        for (int i = 0; i < totalWords; i++) free(parents[i]);
+        free(parents); free(parentSizes); free(parentCaps); free(dist); free(queue); free(words);
+        *returnColumnSizes = NULL;
+        return NULL;
+    }
+
+    // Constraints guarantee total shortest paths do not exceed 10^5
+    int maxPaths = 100001;
+    char*** result = (char***)malloc(maxPaths * sizeof(char**));
+    int* colSizes = (int*)malloc(maxPaths * sizeof(int));
+    char** currentPath = (char**)malloc(totalWords * sizeof(char*));
+
+    // Run backtracking path collector
+    getPaths(endIdx, beginIdx, words, parents, parentSizes, currentPath, 0, result, returnSize, colSizes);
+
+    // Free local structural resources
+    for (int i = 0; i < totalWords; i++) free(parents[i]);
+    free(parents); free(parentSizes); free(parentCaps); free(dist); free(queue); free(currentPath); free(words);
+
+    // Shrink memory space exactly down to matches size bounds
+    if (*returnSize > 0) {
+        result = (char***)realloc(result, (*returnSize) * sizeof(char**));
+        colSizes = (int*)realloc(colSizes, (*returnSize) * sizeof(int));
+    } else {
+        free(result);
+        free(colSizes);
+        result = NULL;
+        colSizes = NULL;
+    }
+
+    *returnColumnSizes = colSizes;
+    return result;
+}
