@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     struct TreeNode *left;
+ *     struct TreeNode *right;
+ * };
+ */
+
+// A simple direct-mapping array for index lookups since values are between -3000 and 3000
+#define OFFSET 3000
+int inorderMap[6001];
+
+// Helper function to create a new tree node
+struct TreeNode* createNode(int val) {
+    struct TreeNode* node = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+    node->val = val;
+    node->left = NULL;
+    node->right = NULL;
+    return node;
+}
+
+// Recursive helper function to build the tree
+struct TreeNode* buildTreeHelper(int* preorder, int* preIdx, int inStart, int inEnd) {
+    // Base case: no elements left to construct the subtree
+    if (inStart > inEnd) {
+        return NULL;
+    }
+
+    // The current element in preorder traversal is the root node
+    int rootVal = preorder[*preIdx];
+    struct TreeNode* root = createNode(rootVal);
+    (*preIdx)++;
+
+    // Find the index of the root value in the inorder traversal using our lookup array
+    int inIdx = inorderMap[rootVal + OFFSET];
+
+    // Recursively build the left and right subtrees
+    // Note: Always build the left subtree first because the preorder array 
+    // lists left branch elements directly after the root.
+    root->left = buildTreeHelper(preorder, preIdx, inStart, inIdx - 1);
+    root->right = buildTreeHelper(preorder, preIdx, inIdx + 1, inEnd);
+
+    return root;
+}
+
+struct TreeNode* buildTree(int* preorder, int preorderSize, int* inorder, int inorderSize) {
+    if (preorderSize == 0 || inorderSize == 0) return NULL;
+
+    // Populate the lookup map with indices from the inorder array
+    // Adding 3000 (OFFSET) shifts values from [-3000, 3000] safely to [0, 6000]
+    for (int i = 0; i < inorderSize; i++) {
+        inorderMap[inorder[i] + OFFSET] = i;
+    }
+
+    int preIdx = 0;
+    return buildTreeHelper(preorder, &preIdx, 0, inorderSize - 1);
+}
