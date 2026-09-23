@@ -1,0 +1,35 @@
+#include <stdbool.h>
+
+void setZeroes(int** matrix, int matrixSize, int* matrixColSize) {
+    int m = matrixSize;
+    int n = matrixColSize[0];
+    bool firstColZero = false;
+
+    // Step 1: Scan the matrix and use the first row/column as tracking headers
+    for (int i = 0; i < m; i++) {
+        // Check if the first column itself contains any zero
+        if (matrix[i][0] == 0) {
+            firstColZero = true;
+        }
+        
+        for (int j = 1; j < n; j++) {
+            if (matrix[i][j] == 0) {
+                matrix[i][0] = 0; // Flag the row
+                matrix[0][j] = 0; // Flag the column
+            }
+        }
+    }
+
+    // Step 2: Use the flags to update the inner matrix (bottom-up/right-to-left prevents overriding)
+    for (int i = m - 1; i >= 0; i--) {
+        for (int j = n - 1; j >= 1; j--) {
+            if (matrix[i][0] == 0 || matrix[0][j] == 0) {
+                matrix[i][j] = 0;
+            }
+        }
+        // Step 3: Update the first column elements after processing the row inner cells
+        if (firstColZero) {
+            matrix[i][0] = 0;
+        }
+    }
+}
