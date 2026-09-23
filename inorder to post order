@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     struct TreeNode *left;
+ *     struct TreeNode *right;
+ * };
+ */
+
+// A simple direct-mapping array for index lookups since values are between -3000 and 3000
+#define OFFSET 3000
+int inorderMap[6001];
+
+// Helper function to create a new tree node
+struct TreeNode* createNode(int val) {
+    struct TreeNode* node = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+    node->val = val;
+    node->left = NULL;
+    node->right = NULL;
+    return node;
+}
+
+// Recursive helper function to build the tree
+struct TreeNode* buildTreeHelper(int* postorder, int* postIdx, int inStart, int inEnd) {
+    // Base case: no elements left to construct the subtree
+    if (inStart > inEnd) {
+        return NULL;
+    }
+
+    // The current element at postIdx from the end of postorder traversal is the root node
+    int rootVal = postorder[*postIdx];
+    struct TreeNode* root = createNode(rootVal);
+    (*postIdx)--;
+
+    // Find the index of the root value in the inorder traversal using our lookup array
+    int inIdx = inorderMap[rootVal + OFFSET];
+
+    // CRITICAL STEP: Recursively build the RIGHT subtree first.
+    // Moving backward in postorder gives us right child elements before left child elements.
+    root->right = buildTreeHelper(postorder, postIdx, inIdx + 1, inEnd);
+    root->left = buildTreeHelper(postorder, postIdx, inStart, inIdx - 1);
+
+    return root;
+}
+
+struct TreeNode* buildTree(int* inorder, int inorderSize, int* postorder, int postorderSize) {
+    if (inorderSize == 0 || postorderSize == 0) return NULL;
+
+    // Populate the lookup map with indices from the inorder array
+    // Adding 3000 (OFFSET) shifts values from [-3000, 3000] safely to [0, 6000]
+    for (int i = 0; i < inorderSize; i++) {
+        inorderMap[inorder[i] + OFFSET] = i;
+    }
+
+    // Start tracking postorder elements from the last index working backward
+    int postIdx = postorderSize - 1;
+    return buildTreeHelper(postorder, &postIdx, 0, inorderSize - 1);
+}
