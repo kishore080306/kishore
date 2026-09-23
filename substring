@@ -1,0 +1,167 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Simple hash map node structure for counting word frequencies
+struct HashNode {
+    char* word;
+    int count;
+    struct HashNode* next;
+};
+
+// BKDR Hash function for strings
+unsigned int getHash(const char* str, int tableSize) {
+    unsigned int seed = 131; // 31 131 1313 13131 etc..
+    unsigned int hash = 0;
+    while (*str) {
+        hash = hash * seed + (*str++);
+    }
+    return hash % tableSize;
+}
+
+// Helper to look up or add word frequency
+int getWordCount(struct HashNode** table, int tableSize, const char* word) {
+    unsigned int index = getHash(word, tableSize);
+    struct HashNode* curr = table[index];
+    while (curr) {
+        if (strcmp(curr->word, word) == 0) {
+            return curr->count;
+        }
+        curr = curr->next;
+    }
+    return 0;
+}
+
+void insertWord(struct HashNode** table, int tableSize, const char* word) {
+    unsigned int index = getHash(word, tableSize);
+    struct HashNode* curr = table[index];
+    while (curr) {
+        if (strcmp(curr->word, word) == 0) {
+            curr->count++;
+            return;
+        }
+        curr = curr->next;
+    }
+    struct HashNode* newNode = (struct HashNode*)malloc(sizeof(struct HashNode));
+    newNode->word = strdup(word);
+    newNode->count = 1;
+    newNode->next = table[index];
+    table[index] = newNode;
+}
+
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+int* findSubstring(char* s, char** words, int wordsSize, int* returnSize) {
+    *returnSize = 0;
+    if (!s || wordsSize == 0) return NULL;
+
+    int sLen = strlen(s);
+    int wordLen = strlen(words[0]);
+    int totalLen = wordLen * wordsSize;
+    if (sLen < totalLen) return NULL;
+
+    // Allocate results array (at most sLen possibilities)
+    int* result = (int*)malloc(sLen * sizeof(int));
+    
+    // Build target word frequencies hash table
+    int tableSize = wordsSize * 2;
+    struct HashNode** targetTable = (struct HashNode**)calloc(tableSize, sizeof(struct HashNode*));
+    for (int i = 0; i < wordsSize; i++) {
+        insertWord(targetTable, tableSize, words[i]);
+    }
+
+    // Temporary storage for string parsing
+    char* tempWord = (char*)malloc((wordLen + 1) * sizeof(char));
+
+    // Sliding window across all wordLen alignments
+    for (int i = 0; i < wordLen; i++) {
+        int left = i;
+        int right = i;
+        int wordsUsed = 0;
+
+        // Current window frequencies hash table
+        struct HashNode** currentTable = (struct HashNode**)calloc(tableSize, sizeof(struct HashNode*));
+
+        while (right + wordLen <= sLen) {
+            // Extract word
+            strncpy(tempWord, s + right, wordLen);
+            tempWord[wordLen] = '\0';
+            right += wordLen;
+
+            int targetCount = getWordCount(targetTable, tableSize, tempWord);
+            if (targetCount > 0) {
+                insertWord(currentTable, tableSize, tempWord);
+                wordsUsed++;
+
+                // If we exceed the required target count, shrink window from left
+                while (getWordCount(currentTable, tableSize, tempWord) > targetCount) {
+                    char* leftWord = (char*)malloc((wordLen + 1) * sizeof(char));
+                    strncpy(leftWord, s + left, wordLen);
+                    leftWord[wordLen] = '\0';
+
+                    // Decrement frequency in current window table
+                    unsigned int index = getHash(leftWord, tableSize);
+                    struct HashNode* curr = currentTable[index];
+                    while (curr) {
+                        if (strcmp(curr->word, leftWord) == 0) {
+                            curr->count--;
+                            break;
+                        }
+                        curr = curr->next;
+                    }
+
+                    wordsUsed--;
+                    left += wordLen;
+                    free(leftWord);
+                }
+
+                // Match found!
+                if (wordsUsed == wordsSize) {
+                    result[(*returnSize)++] = left;
+                }
+            } else {
+                // Invalid word entirely: Clear current window table
+                for (int j = 0; j < tableSize; j++) {
+                    struct HashNode* curr = currentTable[j];
+                    while (curr) {
+                        struct HashNode* temp = curr;
+                        curr = curr->next;
+                        free(temp->word);
+                        free(temp);
+                    }
+                    currentTable[j] = NULL;
+                }
+                wordsUsed = 0;
+                left = right;
+            }
+        }
+
+        // Clean up current table memory for next alignment
+        for (int j = 0; j < tableSize; j++) {
+            struct HashNode* curr = currentTable[j];
+            while (curr) {
+                struct HashNode* temp = curr;
+                curr = curr->next;
+                free(temp->word);
+                free(temp);
+            }
+        }
+        free(currentTable);
+    }
+
+    // Comprehensive memory cleanup
+    for (int j = 0; j < tableSize; j++) {
+        struct HashNode* curr = targetTable[j];
+        while (curr) {
+            struct HashNode* temp = curr;
+            curr = curr->next;
+            free(temp->word);
+            free(temp);
+        }
+    }
+    free(targetTable);
+    free(tempWord);
+
+    return result;
+}
