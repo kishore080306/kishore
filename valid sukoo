@@ -1,0 +1,38 @@
+#include <stdbool.h>
+
+bool isValidSudoku(char** board, int boardSize, int* boardColSize) {
+    // Array of bitmasks to track numbers 1-9 for rows, columns, and 3x3 boxes
+    int rows[9] = {0};
+    int cols[9] = {0};
+    int boxes[9] = {0};
+
+    for (int r = 0; r < 9; r++) {
+        for (int c = 0; c < 9; c++) {
+            char val = board[r][c];
+
+            // Only validate filled cells
+            if (val == '.') {
+                continue;
+            }
+
+            // Convert character digit '1'-'9' to a 0-indexed integer shift (0 to 8)
+            int num_shift = val - '1';
+            int mask = 1 << num_shift;
+
+            // Calculate the 3x3 box index (0 to 8)
+            int box_index = (r / 3) * 3 + (c / 3);
+
+            // Check if the number already exists using bitwise AND
+            if ((rows[r] & mask) || (cols[c] & mask) || (boxes[box_index] & mask)) {
+                return false;
+            }
+
+            // Record the number into our tracking maps using bitwise OR
+            rows[r] |= mask;
+            cols[c] |= mask;
+            boxes[box_index] |= mask;
+        }
+    }
+
+    return true;
+}
