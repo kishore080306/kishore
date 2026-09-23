@@ -1,0 +1,81 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Node structure for the hash table chaining
+struct Node {
+    int key;
+    int value;
+    struct Node* next;
+};
+
+// Hash function to map values to table indices
+int hash(int key, int size) {
+    int h = key % size;
+    return h < 0 ? h + size : h; // Handle negative numbers
+}
+
+// Function to insert key-value pair into the hash table
+void insert(struct Node** hashTable, int size, int key, int value) {
+    int index = hash(key, size);
+    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+    newNode->key = key;
+    newNode->value = value;
+    newNode->next = hashTable[index];
+    hashTable[index] = newNode;
+}
+
+// Function to search for a key in the hash table
+struct Node* search(struct Node** hashTable, int size, int key) {
+    int index = hash(key, size);
+    struct Node* cursor = hashTable[index];
+    while (cursor != NULL) {
+        if (cursor->key == key) {
+            return cursor;
+        }
+        cursor = cursor->next;
+    }
+    return NULL;
+}
+
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+    *returnSize = 2;
+    int* result = (int*)malloc(2 * sizeof(int));
+    
+    // Allocate memory for the hash table
+    // Using numsSize as table size works well for average O(1) lookups
+    struct Node** hashTable = (struct Node**)calloc(numsSize, sizeof(struct Node*));
+
+    for (int i = 0; i < numsSize; i++) {
+        int complement = target - nums[i];
+        
+        // Check if the complement exists in the hash table
+        struct Node* match = search(hashTable, numsSize, complement);
+        if (match != NULL) {
+            result[0] = match->value;
+            result[1] = i;
+            
+            // Free the hash table memory before returning
+            for (int j = 0; j < numsSize; j++) {
+                struct Node* cursor = hashTable[j];
+                while (cursor != NULL) {
+                    struct Node* temp = cursor;
+                    cursor = cursor->next;
+                    free(temp);
+                }
+            }
+            free(hashTable);
+            return result;
+        }
+        
+        // Otherwise, insert the current number and its index
+        insert(hashTable, numsSize, nums[i], i);
+    }
+
+    // Fallback if no solution is found (guaranteed not to hit based on constraints)
+    free(hashTable);
+    *returnSize = 0;
+    return NULL;
+}
