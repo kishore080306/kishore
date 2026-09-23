@@ -1,0 +1,104 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Hash table entry mapping a signature key to its group of anagrams
+struct GroupNode {
+    char* key;              // The sorted string acting as the hash key
+    char** words;           // Array of original words in this group
+    int wordCount;          // Current number of words in this group
+    int capacity;           // Current allocated capacity for words array
+    struct GroupNode* next; // Pointer for handling chaining collisions
+};
+
+// Comparison function to sort individual word characters
+int compareChars(const void* a, const void* b) {
+    return (*(char*)a - *(char*)b);
+}
+
+// Simple hash function for string signatures
+unsigned int hashKey(const char* str, int size) {
+    unsigned int hash = 5381;
+    while (*str) {
+        hash = ((hash << 5) + hash) + (*str++);
+    }
+    return hash % size;
+}
+
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ * colSizes must be malloced, assume caller calls free().
+ */
+char*** groupAnagrams(char** strs, int strsSize, int* returnSize, int** returnColumnSizes) {
+    if (strsSize == 0) {
+        *returnSize = 0;
+        return NULL;
+    }
+
+    int tableSize = strsSize * 2;
+    struct GroupNode** hashTable = (struct GroupNode**)calloc(tableSize, sizeof(struct GroupNode*));
+    int uniqueGroups = 0;
+
+    for (int i = 0; i < strsSize; i++) {
+        // Step 1: Generate sorted signature key
+        char* sortedKey = strdup(strs[i]);
+        qsort(sortedKey, strlen(sortedKey), sizeof(char), compareChars);
+
+        // Step 2: Query Hash Map
+        unsigned int index = hashKey(sortedKey, tableSize);
+        struct GroupNode* curr = hashTable[index];
+        struct GroupNode* match = NULL;
+
+        while (curr) {
+            if (strcmp(curr->key, sortedKey) == 0) {
+                match = curr;
+                break;
+            }
+            curr = curr->next;
+        }
+
+        // Step 3: Append to existing group or create a new one
+        if (match) {
+            if (match->wordCount == match->capacity) {
+                match->capacity *= 2;
+                match->words = (char**)realloc(match->words, match->capacity * sizeof(char*));
+            }
+            match->words[match->wordCount++] = strs[i];
+            free(sortedKey); // Duplicate key is not needed anymore
+        } else {
+            struct GroupNode* newNode = (struct GroupNode*)malloc(sizeof(struct GroupNode));
+            newNode->key = sortedKey;
+            newNode->capacity = 4;
+            newNode->words = (char**)malloc(newNode->capacity * sizeof(char*));
+            newNode->words[0] = strs[i];
+            newNode->wordCount = 1;
+            newNode->next = hashTable[index];
+            hashTable[index] = newNode;
+            uniqueGroups++;
+        }
+    }
+
+    // Step 4: Populate results structures
+    *returnSize = uniqueGroups;
+    char*** result = (char***)malloc(uniqueGroups * sizeof(char**));
+    *returnColumnSizes = (int*)malloc(uniqueGroups * sizeof(int));
+
+    int groupIdx = 0;
+    for (int j = 0; j < tableSize; j++) {
+        struct GroupNode* curr = hashTable[j];
+        while (curr) {
+            result[groupIdx] = curr->words;
+            (*returnColumnSizes)[groupIdx] = curr->wordCount;
+            groupIdx++;
+
+            // Free structure nodes but keep the `words` arrays intact since they go to output
+            struct GroupNode* temp = curr;
+            curr = curr->next;
+            free(temp->key);
+            free(temp);
+        }
+    }
+    free(hashTable);
+
+    return result;
+}
