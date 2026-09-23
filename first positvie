@@ -1,0 +1,29 @@
+#include <stdio.h>
+
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int firstMissingPositive(int* nums, int numsSize) {
+    for (int i = 0; i < numsSize; i++) {
+        // While the current number belongs in the array range [1, numsSize]
+        // and is not already at its correct index position, swap it.
+        // We use a long long typecast or boundary logic if target index calculations overflow,
+        // but since numsSize <= 10^5, cast to long long prevents array index issues.
+        while (nums[i] > 0 && nums[i] <= numsSize && nums[i] != nums[nums[i] - 1]) {
+            swap(&nums[i], &nums[nums[i] - 1]);
+        }
+    }
+
+    // Second pass: look for the first index that doesn't match its value map
+    for (int i = 0; i < numsSize; i++) {
+        if (nums[i] != i + 1) {
+            return i + 1;
+        }
+    }
+
+    // If numbers 1 to numsSize are all present, the answer is numsSize + 1
+    return numsSize + 1;
+}
