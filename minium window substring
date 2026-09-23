@@ -1,0 +1,73 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+
+char* minWindow(char* s, char* t) {
+    if (!s || !t) return "";
+
+    int s_len = strlen(s);
+    int t_len = strlen(t);
+    if (s_len < t_len) return "";
+
+    // Frequency maps for ASCII characters
+    int target_counts[128] = {0};
+    int window_counts[128] = {0};
+
+    // Populate target frequencies from string t
+    int unique_chars_needed = 0;
+    for (int i = 0; i < t_len; i++) {
+        if (target_counts[(unsigned char)t[i]] == 0) {
+            unique_chars_needed++;
+        }
+        target_counts[(unsigned char)t[i]]++;
+    }
+
+    int left = 0, right = 0;
+    int formed = 0; // Tracks how many unique characters match target frequency
+    
+    // Variables to track the best window match boundaries
+    int min_len = INT_MAX;
+    int start_idx = 0;
+
+    while (right < s_len) {
+        char c = s[right];
+        window_counts[(unsigned char)c]++;
+
+        // If the character matches the target requirement count, increment 'formed'
+        if (target_counts[(unsigned char)c] > 0 && window_counts[(unsigned char)c] == target_counts[(unsigned char)c]) {
+            formed++;
+        }
+
+        // Try to contract the window from the left when it's fully valid
+        while (left <= right && formed == unique_chars_needed) {
+            c = s[left];
+
+            // Save the window if it's smaller than the previous minimum
+            if (right - left + 1 < min_len) {
+                min_len = right - left + 1;
+                start_idx = left;
+            }
+
+            // Shrink window
+            window_counts[(unsigned char)c]--;
+            if (target_counts[(unsigned char)c] > 0 && window_counts[(unsigned char)c] < target_counts[(unsigned char)c]) {
+                formed--;
+            }
+            left++;
+        }
+        right++;
+    }
+
+    // If no window was found, return an empty string
+    if (min_len == INT_MAX) {
+        return "";
+    }
+
+    // Allocate memory for the result string (+1 for null terminator)
+    char* result = (char*)malloc((min_len + 1) * sizeof(char));
+    strncpy(result, s + start_idx, min_len);
+    result[min_len] = '\0';
+
+    return result;
+}
