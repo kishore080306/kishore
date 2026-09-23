@@ -1,0 +1,76 @@
+#include <stdbool.h>
+
+// Bitmask arrays to keep track of used numbers (1-9)
+int rowMasks[9];
+int colMasks[9];
+int boxMasks[9];
+
+// Helper to get the box index (0 to 8)
+int getBoxIndex(int r, int c) {
+    return (r / 3) * 3 + (c / 3);
+}
+
+// Backtracking function to solve the board cell by cell
+bool solve(char** board, int r, int c) {
+    // If we reach row 9, we have successfully filled the whole board
+    if (r == 9) return true;
+    
+    // If we reach column 9, move to the beginning of the next row
+    if (c == 9) return solve(board, r + 1, 0);
+    
+    // If the cell is already filled, skip it and move to the next column
+    if (board[r][c] != '.') return solve(board, r, c + 1);
+    
+    int boxIdx = getBoxIndex(r, c);
+    
+    // Try placing digits 1 through 9
+    for (int num = 1; num <= 9; num++) {
+        int mask = 1 << num;
+        
+        // Check if the number is safe to place (not present in row, col, or box)
+        if (!(rowMasks[r] & mask) && !(colMasks[c] & mask) && !(boxMasks[boxIdx] & mask)) {
+            
+            // Place the digit
+            board[r][c] = num + '0';
+            rowMasks[r] |= mask;
+            colMasks[c] |= mask;
+            boxMasks[boxIdx] |= mask;
+            
+            // Recurse to fill the next cell
+            if (solve(board, r, c + 1)) return true;
+            
+            // Undo placement (Backtrack)
+            board[r][c] = '.';
+            rowMasks[r] &= ~mask;
+            colMasks[c] &= ~mask;
+            boxMasks[boxIdx] &= ~mask;
+        }
+    }
+    
+    return false; // Trigger backtracking if no digit from 1-9 works
+}
+
+void solveSudoku(char** board, int boardSize, int* boardColSize) {
+    // Initialize/Reset masks to zero
+    for (int i = 0; i < 9; i++) {
+        rowMasks[i] = 0;
+        colMasks[i] = 0;
+        boxMasks[i] = 0;
+    }
+    
+    // Pre-populate masks with the existing clues on the board
+    for (int r = 0; r < 9; r++) {
+        for (int c = 0; c < 9; c++) {
+            if (board[r][c] != '.') {
+                int num = board[r][c] - '0';
+                int mask = 1 << num;
+                rowMasks[r] |= mask;
+                colMasks[c] |= mask;
+                boxMasks[getBoxIndex(r, c)] |= mask;
+            }
+        }
+    }
+    
+    // Start the backtracking solver from the top-left cell (0, 0)
+    solve(board, 0, 0);
+}
