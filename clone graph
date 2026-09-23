@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * Definition for a Node.
+ * struct Node {
+ *     int val;
+ *     int numNeighbors;
+ *     struct Node** neighbors;
+ * };
+ */
+
+// Visited lookup array to store pointers to the newly created cloned nodes
+// Constraints on LeetCode state the number of nodes is at most 100, and val is 1-indexed.
+struct Node* visited[101];
+
+// Recursive DFS helper function to perform the deep copy
+struct Node* cloneHelper(struct Node* node) {
+    if (node == NULL) {
+        return NULL;
+    }
+
+    // If the node has already been cloned, return its cached reference to handle cycles
+    if (visited[node->val] != NULL) {
+        return visited[node->val];
+    }
+
+    // Allocate memory for the cloned node
+    struct Node* cloneNode = (struct Node*)malloc(sizeof(struct Node));
+    cloneNode->val = node->val;
+    cloneNode->numNeighbors = node->numNeighbors;
+
+    // Cache the cloned node immediately before exploring neighbors to prevent infinite recursion
+    visited[node->val] = cloneNode;
+
+    // Allocate memory for the clone's neighbor pointer array
+    if (node->numNeighbors > 0) {
+        cloneNode->neighbors = (struct Node**)malloc(node->numNeighbors * sizeof(struct Node*));
+        
+        // Recursively clone all neighbors
+        for (int i = 0; i < node->numNeighbors; i++) {
+            cloneNode->neighbors[i] = cloneHelper(node->neighbors[i]);
+        }
+    } else {
+        cloneNode->neighbors = NULL;
+    }
+
+    return cloneNode;
+}
+
+struct Node* cloneGraph(struct Node* node) {
+    // Reset the visited mapping tracking array for a clean solution run state
+    for (int i = 0; i <= 100; i++) {
+        visited[i] = NULL;
+    }
+
+    return cloneHelper(node);
+}
